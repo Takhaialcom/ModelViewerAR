@@ -1,144 +1,384 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebAR 3D Model Viewer</title>
-  
-  <!-- Import Google Model Viewer (version pinned so it can't change under you) -->
-  <script type="module" src="https://unpkg.com/@google/model-viewer@4.0.0/dist/model-viewer.min.js"></script>
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>3D & AR Viewer</title>
+
+  <!-- Google Model Viewer -->
+  <script type="module"
+    src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js">
+  </script>
+
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      background: #f0f0f0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      padding: 24px;
+      background: #f4f5fa;
+      color: #202124;
       font-family: Arial, sans-serif;
     }
+
+    .container {
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    .card {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 30px;
+      padding: 24px;
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 10px 35px #0000000d;
+    }
+
+    .viewer-container {
+      position: relative;
+      overflow: hidden;
+      border-radius: 20px;
+      background: #f0efff;
+    }
+
     model-viewer {
       width: 100%;
-      height: 100vh;
-      background-color: #fff;
+      height: 500px;
+      display: block;
+      background: transparent;
+      --poster-color: transparent;
+      --progress-bar-color: #6558f5;
     }
-    /* Big, visible AR button (model-viewer only shows it when AR is possible) */
-    #ar-button {
+
+    .badge {
       position: absolute;
-      left: 50%;
-      bottom: 40px;
-      transform: translateX(-50%);
-      padding: 14px 24px;
-      border: 0;
-      border-radius: 24px;
-      background: #4285f4;
-      color: #fff;
-      font-size: 16px;
-      white-space: nowrap;
-      cursor: pointer;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    }
-    #ar-button:active { background: #3367d6; }
-    /* Shown only when AR is not available on this device/browser */
-    #ar-hint {
-      position: absolute;
-      left: 50%;
       top: 16px;
+      left: 16px;
+      z-index: 2;
+      padding: 9px 13px;
+      background: #ffffffdf;
+      border-radius: 20px;
+      font-size: 12px;
+      pointer-events: none;
+    }
+
+    .ar-button {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
       transform: translateX(-50%);
-      max-width: 90%;
-      padding: 10px 16px;
-      border-radius: 12px;
-      background: rgba(32,33,36,0.92);
-      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 15px 24px;
+      border: none;
+      border-radius: 50px;
+      background: #6558f5;
+      color: white;
       font-size: 14px;
-      text-align: center;
-      display: none;
+      font-weight: bold;
+      white-space: nowrap;
+      box-shadow: 0 8px 24px #6558f550;
+      cursor: pointer;
+    }
+
+    .ar-button:hover {
+      background: #5043d8;
+    }
+
+    .ar-button svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .control-button {
+      padding: 12px 16px;
+      border: 1px solid #e1e2ea;
+      border-radius: 12px;
+      background: white;
+      color: #333;
+      cursor: pointer;
+    }
+
+    .control-button.active {
+      background: #eeecff;
+      border-color: #6558f5;
+      color: #5043d8;
+    }
+
+    .info {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 10px;
+    }
+
+    .eyebrow {
+      color: #6558f5;
+      font-size: 12px;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+
+    h1 {
+      margin: 14px 0;
+      font-size: 36px;
+      line-height: 1.15;
+    }
+
+    p {
+      color: #777b86;
+      line-height: 1.8;
+    }
+
+    .status {
+      min-height: 20px;
+      margin-top: 12px;
+      color: #777b86;
+      font-size: 12px;
+    }
+
+    .status.error {
+      color: #c62828;
+    }
+
+    .feature {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #eeeef3;
+    }
+
+    .feature strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .feature p {
+      margin: 0;
+      font-size: 13px;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 12px;
+      }
+
+      .card {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        padding: 14px;
+      }
+
+      model-viewer {
+        height: 420px;
+      }
+
+      h1 {
+        font-size: 29px;
+      }
     }
   </style>
 </head>
+
 <body>
+  <main class="container">
+    <section class="card">
 
-  <!-- WebAR 3D Model -->
-  <model-viewer src="model.glb" 
-                ios-src="model.usdz"
-                alt="3D model"
-                ar
-                ar-modes="webxr scene-viewer quick-look"
-                ar-placement="floor"
-                ar-scale="auto"
-                camera-controls
-                auto-rotate
-                poster="poster.png"
-                shadow-intensity="1"
-                style="width: 100%; height: 100vh;">
+      <div>
+        <div class="viewer-container">
 
-    <!-- AR button -->
-    <button slot="ar-button" id="ar-button" type="button">👀 View in your space</button>
-  </model-viewer>
+          <div class="badge">Interactive 3D Model</div>
 
-  <div id="ar-hint"></div>
+          <model-viewer
+            id="viewer"
+
+            src="./models/product.glb"
+            ios-src="./models/product.usdz"
+
+            alt="Interactive 3D product"
+
+            ar
+            ar-modes="scene-viewer webxr quick-look"
+            ar-scale="auto"
+
+            camera-controls
+            touch-action="pan-y"
+
+            auto-rotate
+            rotation-per-second="20deg"
+
+            camera-orbit="0deg 75deg 105%"
+            shadow-intensity="1"
+            exposure="1"
+            environment-image="neutral"
+
+            loading="eager"
+            reveal="auto">
+
+            <!-- Custom AR button -->
+            <button slot="ar-button"
+                    id="arButton"
+                    class="ar-button"
+                    type="button">
+
+              <svg viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="1.8"
+                   stroke-linecap="round"
+                   stroke-linejoin="round"
+                   aria-hidden="true">
+                <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+                <circle cx="12" cy="12" r="6"/>
+                <circle cx="12" cy="12" r="2"/>
+              </svg>
+
+              <span>View in AR</span>
+            </button>
+
+          </model-viewer>
+
+        </div>
+
+        <div class="controls">
+          <button id="rotateButton"
+                  class="control-button active"
+                  type="button">
+            ↻ Auto Rotate
+          </button>
+
+          <button id="resetButton"
+                  class="control-button"
+                  type="button">
+            ⟳ Reset View
+          </button>
+        </div>
+
+        <div id="status" class="status" role="status"
+             aria-live="polite">
+          Loading model...
+        </div>
+      </div>
+
+      <div class="info">
+        <div class="eyebrow">3D EXPERIENCE</div>
+
+        <h1>Explore Your Product in 3D and AR</h1>
+
+        <p>
+          Rotate, zoom, and explore the model.
+          Use augmented reality to see it in your
+          real-world environment.
+        </p>
+
+        <div class="feature">
+          <strong>Interactive 3D</strong>
+          <p>Rotate with your finger or mouse and zoom in to inspect details.</p>
+        </div>
+
+        <div class="feature">
+          <strong>Android AR</strong>
+          <p>Launch Google Scene Viewer or supported WebXR experiences.</p>
+        </div>
+
+        <div class="feature">
+          <strong>iOS AR</strong>
+          <p>Open your USDZ model in Apple's AR Quick Look.</p>
+        </div>
+      </div>
+
+    </section>
+  </main>
 
   <script>
-    // Optional: tells you why AR failed instead of silently returning to the 3D view
-    const mv = document.querySelector("model-viewer");
-    mv.addEventListener("ar-status", (e) => {
-      if (e.detail.status === "failed") {
-        alert("AR failed to start. Check HTTPS, that model.glb is reachable, and that ARCore is installed.");
+    const viewer = document.getElementById("viewer");
+    const status = document.getElementById("status");
+
+    const rotateButton = document.getElementById("rotateButton");
+    const resetButton = document.getElementById("resetButton");
+    const arButton = document.getElementById("arButton");
+
+    // Track whether the GLB has loaded successfully.
+    viewer.addEventListener("load", () => {
+      status.textContent = "Model loaded successfully.";
+      status.classList.remove("error");
+    });
+
+    // Display model loading progress.
+    viewer.addEventListener("progress", (event) => {
+      const progress = Math.round(
+        event.detail.totalProgress * 100
+      );
+
+      if (progress < 100) {
+        status.textContent = `Loading model: ${progress}%`;
       }
     });
-    mv.addEventListener("error", (e) => console.error("Model error:", e.detail));
 
-    // Check that model.glb is a real GLB file (catches 404s, wrong case, and Git LFS pointer files)
-    async function checkModelFile() {
-      const hint = document.getElementById("ar-hint");
-      const url = mv.getAttribute("src");
-      try {
-        const res = await fetch(url, { headers: { Range: "bytes=0-3" }, cache: "no-store" });
-        if (!res.ok) {
-          hint.textContent = "model.glb returned HTTP " + res.status + ". Check the file name and its upper/lower case.";
-        } else {
-          const magic = new TextDecoder().decode((await res.arrayBuffer()).slice(0, 4));
-          const range = res.headers.get("content-range");
-          const total = range ? parseInt(range.split("/")[1], 10) : parseInt(res.headers.get("content-length") || "0", 10);
-          const mb = total / 1048576;
-          if (magic !== "glTF") {
-            hint.textContent = "model.glb is not a valid GLB file (it may be a Git LFS pointer). Re-upload the real file.";
-          } else if (mb > 15) {
-            hint.textContent = "model.glb is " + mb.toFixed(1) + " MB. Scene Viewer often fails above about 15 MB. Compress it.";
-          } else {
-            console.log("model.glb OK, " + mb.toFixed(2) + " MB");
-            return;
-          }
-        }
-      } catch (err) {
-        hint.textContent = "Could not read model.glb: " + err.message;
-      }
-      hint.style.display = "block";
-    }
-    checkModelFile();
+    // Handle GLB loading errors.
+    viewer.addEventListener("error", (event) => {
+      status.textContent =
+        "Failed to load GLB. Check the file path and console.";
+      status.classList.add("error");
 
-    // If the AR button can't show, say why
-    mv.addEventListener("load", () => {
-      if (mv.canActivateAR) return;
-      const hint = document.getElementById("ar-hint");
-      const ua = navigator.userAgent;
-      let text = "AR is not available here.";
-      if (!window.isSecureContext) {
-        text = "AR needs HTTPS. Open this page with an https:// address.";
-      } else if (/FBAN|FBAV|Instagram|Line\/|MicroMessenger|Snapchat|LinkedInApp|Twitter|TikTok|; wv\)/i.test(ua)) {
-        text = "AR doesn't work in in-app browsers. Open this page in Chrome (Android) or Safari (iPhone).";
-      } else if (/Android/i.test(ua)) {
-        text = "Use Chrome and install or update 'Google Play Services for AR' (ARCore). Some phones don't support it.";
-      } else if (/iPhone|iPad/i.test(ua)) {
-        text = "Open this page in Safari. Also check that model.usdz exists next to index.html.";
+      console.error("Model Viewer error:", event);
+    });
+
+    // Enable/disable automatic rotation.
+    rotateButton.addEventListener("click", () => {
+      const rotating = viewer.hasAttribute("auto-rotate");
+
+      if (rotating) {
+        viewer.removeAttribute("auto-rotate");
       } else {
-        text = "AR works only on a phone or tablet. Open this page on your phone.";
+        viewer.setAttribute("auto-rotate", "");
       }
-      hint.textContent = text;
-      hint.style.display = "block";
+
+      rotateButton.classList.toggle("active", !rotating);
+      rotateButton.textContent = rotating
+        ? "▶ Auto Rotate"
+        : "↻ Auto Rotate";
+    });
+
+    // Restore the initial camera view.
+    resetButton.addEventListener("click", () => {
+      viewer.cameraOrbit = "0deg 75deg 105%";
+      viewer.cameraTarget = "auto";
+      viewer.fieldOfView = "auto";
+    });
+
+    // Model Viewer handles native AR launching.
+    // This button is intentionally a slotted AR button.
+    arButton.addEventListener("click", () => {
+      status.textContent = "Opening AR...";
+    });
+
+    // Monitor AR session state.
+    viewer.addEventListener("ar-status", (event) => {
+      const arState = event.detail.status;
+
+      if (arState === "session-started") {
+        status.textContent = "AR experience started.";
+      } else if (arState === "not-presenting") {
+        status.textContent = "Returned to the 3D viewer.";
+      } else if (arState === "failed") {
+        status.textContent = "Unable to start AR on this device.";
+        status.classList.add("error");
+      }
     });
   </script>
-
 </body>
 </html>
