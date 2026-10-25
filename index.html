@@ -44,7 +44,7 @@
     #ar-hint {
       position: absolute;
       left: 50%;
-      bottom: 40px;
+      top: 16px;
       transform: translateX(-50%);
       max-width: 90%;
       padding: 10px 16px;
@@ -64,7 +64,7 @@
                 ios-src="model.usdz"
                 alt="3D model"
                 ar
-                ar-modes="scene-viewer quick-look webxr"
+                ar-modes="webxr scene-viewer quick-look"
                 ar-placement="floor"
                 ar-scale="auto"
                 camera-controls
@@ -88,6 +88,35 @@
       }
     });
     mv.addEventListener("error", (e) => console.error("Model error:", e.detail));
+
+    // Check that model.glb is a real GLB file (catches 404s, wrong case, and Git LFS pointer files)
+    async function checkModelFile() {
+      const hint = document.getElementById("ar-hint");
+      const url = mv.getAttribute("src");
+      try {
+        const res = await fetch(url, { headers: { Range: "bytes=0-3" }, cache: "no-store" });
+        if (!res.ok) {
+          hint.textContent = "model.glb returned HTTP " + res.status + ". Check the file name and its upper/lower case.";
+        } else {
+          const magic = new TextDecoder().decode((await res.arrayBuffer()).slice(0, 4));
+          const range = res.headers.get("content-range");
+          const total = range ? parseInt(range.split("/")[1], 10) : parseInt(res.headers.get("content-length") || "0", 10);
+          const mb = total / 1048576;
+          if (magic !== "glTF") {
+            hint.textContent = "model.glb is not a valid GLB file (it may be a Git LFS pointer). Re-upload the real file.";
+          } else if (mb > 15) {
+            hint.textContent = "model.glb is " + mb.toFixed(1) + " MB. Scene Viewer often fails above about 15 MB. Compress it.";
+          } else {
+            console.log("model.glb OK, " + mb.toFixed(2) + " MB");
+            return;
+          }
+        }
+      } catch (err) {
+        hint.textContent = "Could not read model.glb: " + err.message;
+      }
+      hint.style.display = "block";
+    }
+    checkModelFile();
 
     // If the AR button can't show, say why
     mv.addEventListener("load", () => {
